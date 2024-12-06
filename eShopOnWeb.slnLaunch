@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "Web and API",
+    "Projects": [
+      {
+        "Path": "src\\Web\\Web.csproj",
+        "Action": "Start",
+        "DebugTarget": "Web"
+      },
+      {
+        "Path": "src\\PublicApi\\PublicApi.csproj",
+        "Action": "Start",
+        "DebugTarget": "PublicApi"
+      }
+    ]
+  }
+]
