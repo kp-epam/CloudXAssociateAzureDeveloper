@@ -10,15 +10,16 @@ using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.Extensions.Logging;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace Microsoft.eShopWeb.ApplicationCore.UseCases.SaveOrderInCosmosDB;
-public class SaveOrderInCosmosDBUseCase : ISaveOrderInCosmosDBUseCase
+namespace Microsoft.eShopWeb.ApplicationCore.UseCases.SaveOrderDetailsInCosmosDB;
+public class SaveOrderDetailsInCosmosDBUseCase : ISaveOrderDetailsInCosmosDBUseCase
 {
     private const string AzureFunctionApiUrl = "";
 
-    private readonly ILogger<SaveOrderInCosmosDBUseCase> _logger;
+    private readonly ILogger<SaveOrderDetailsInCosmosDBUseCase> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public SaveOrderInCosmosDBUseCase(ILogger<SaveOrderInCosmosDBUseCase> logger,
+    public SaveOrderDetailsInCosmosDBUseCase(
+        ILogger<SaveOrderDetailsInCosmosDBUseCase> logger,
         IHttpClientFactory httpClientFactory)
     {
         _logger = logger;

@@ -60,7 +60,7 @@ public class IndexModel : PageModel
         }
 
         var basketView = await _basketViewModelService.GetOrCreateBasketForUser(GetOrSetBasketCookieAndUserName());
-        var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
+        var updateModel = items.ToDictionary(b => b.Id, b => b.Quantity);
         var basket = await _basketService.SetQuantities(basketView.Id, updateModel);
         BasketModel = await _basketViewModelService.Map(basket);
     }

@@ -44,7 +44,7 @@ public class BasketService : IBasketService
         await _basketRepository.DeleteAsync(basket);
     }
 
-    public async Task<Result<Basket>> SetQuantities(int basketId, Dictionary<string, int> quantities)
+    public async Task<Result<Basket>> SetQuantities(int basketId, Dictionary<int, int> quantities)
     {
         var basketSpec = new BasketWithItemsSpecification(basketId);
         var basket = await _basketRepository.FirstOrDefaultAsync(basketSpec);
@@ -52,7 +52,7 @@ public class BasketService : IBasketService
 
         foreach (var item in basket.Items)
         {
-            if (quantities.TryGetValue(item.Id.ToString(), out var quantity))
+            if (quantities.TryGetValue(item.Id, out var quantity))
             {
                 if (_logger != null) _logger.LogInformation($"Updating quantity of item ID:{item.Id} to {quantity}.");
                 item.SetQuantity(quantity);

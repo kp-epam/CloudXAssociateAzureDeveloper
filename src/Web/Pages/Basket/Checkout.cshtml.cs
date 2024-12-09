@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Exceptions;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
-using Microsoft.eShopWeb.ApplicationCore.UseCases.SaveOrderInCosmosDB;
+using Microsoft.eShopWeb.ApplicationCore.UseCases.PushOrderItemsToServiceBus;
+using Microsoft.eShopWeb.ApplicationCore.UseCases.SaveOrderDetailsInCosmosDB;
 using Microsoft.eShopWeb.Infrastructure.Identity;
 using Microsoft.eShopWeb.Web.Interfaces;
 
@@ -20,7 +21,8 @@ public class CheckoutModel : PageModel
     private readonly IOrderService _orderService;
     private readonly IBasketViewModelService _basketViewModelService;
     private readonly IAppLogger<CheckoutModel> _logger;
-    private readonly ISaveOrderInCosmosDBUseCase _saveOrderInCosmosDB;
+    private readonly ISaveOrderDetailsInCosmosDBUseCase _saveOrderDetailsInCosmosDB;
+    private readonly IPushOrderItemsToServiceBusUseCase _pushOrderItemsToServiceBus;
     private string? _username = null;
 
     public CheckoutModel(IBasketService basketService,
@@ -28,14 +30,16 @@ public class CheckoutModel : PageModel
         SignInManager<ApplicationUser> signInManager,
         IOrderService orderService,
         IAppLogger<CheckoutModel> logger,
-        ISaveOrderInCosmosDBUseCase saveOrderInCosmosDB)
+        ISaveOrderDetailsInCosmosDBUseCase saveOrderDetailsInCosmosDB,
+        IPushOrderItemsToServiceBusUseCase pushOrderItemsToServiceBus)
     {
         _basketService = basketService;
         _signInManager = signInManager;
         _orderService = orderService;
         _basketViewModelService = basketViewModelService;
         _logger = logger;
-        _saveOrderInCosmosDB = saveOrderInCosmosDB;
+        _saveOrderDetailsInCosmosDB = saveOrderDetailsInCosmosDB;
+        _pushOrderItemsToServiceBus = pushOrderItemsToServiceBus;
     }
 
     public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
@@ -56,13 +60,14 @@ public class CheckoutModel : PageModel
                 return BadRequest();
             }
 
-            var updateModel = items.ToDictionary(b => b.Id.ToString(), b => b.Quantity);
-            await _basketService.SetQuantities(BasketModel.Id, updateModel);
+            var quantities = items.ToDictionary(b => b.Id, b => b.Quantity);
+            await _basketService.SetQuantities(BasketModel.Id, quantities);
             var createdOrder = await _orderService
                 .CreateAndGetOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
 
-            await _saveOrderInCosmosDB.Apply(createdOrder);
+            await _saveOrderDetailsInCosmosDB.Apply(createdOrder);
+            await _pushOrderItemsToServiceBus.Apply(quantities);
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {
