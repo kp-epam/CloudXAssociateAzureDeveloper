@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AzureFunctions.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace AzureFunctions;
-
 public class DeliveryOrderProcessor
 {
     private readonly ILogger<DeliveryOrderProcessor> _logger;
@@ -15,9 +15,14 @@ public class DeliveryOrderProcessor
     }
 
     [Function("DeliveryOrderProcessor")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+    public async Task<DeliveryOrderProcessorResponse> RunAsync([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
     {
-        _logger.LogInformation("C# HTTP trigger function processed a request.");
-        return new OkObjectResult("Welcome to Azure Functions!");
+        string order = await new StreamReader(req.Body).ReadToEndAsync();
+
+        return new DeliveryOrderProcessorResponse
+        {
+            Order = order,
+            HttpResponse = new OkObjectResult("Azure function has been executed.")
+        };
     }
 }
