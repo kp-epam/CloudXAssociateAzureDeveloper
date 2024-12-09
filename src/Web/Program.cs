@@ -22,6 +22,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddConsole();
 
+// Register IHttpClientFactory
+builder.Services.AddHttpClient();
+
 if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName == "Docker")
 {
     // Configure SQL Server (local)
