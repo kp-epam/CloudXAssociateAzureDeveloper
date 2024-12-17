@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,28 +9,46 @@ using AzureFunctionsShared.OrderItemsReserver;
 namespace Microsoft.eShopWeb.ApplicationCore.UseCases.PushOrderItemsToServiceBus;
 public class PushOrderItemsToServiceBusUseCase : IPushOrderItemsToServiceBusUseCase
 {
-    private const string ServiceBusConnectionString = "";
-    private const string ServiceBusQueueName = "";
-
-    public async Task Apply(IDictionary<int, int> basketQuantities)
+    public async Task Apply(string? serviceBusConnString,
+        string? serviceBusQueueName, IDictionary<int, int> basketQuantities)
     {
-        if (basketQuantities == null || basketQuantities.Count < 1)
-        {
-            return;
-        }
+        ValidateParameters(serviceBusConnString, serviceBusQueueName, basketQuantities);
 
         var reservedOrderItems = MapBasketQuantities(basketQuantities);
         var messageContent = JsonSerializer.Serialize(reservedOrderItems);
 
-        await using (var client = new ServiceBusClient(ServiceBusConnectionString))
+        await using (var client = new ServiceBusClient(serviceBusConnString))
         {
-            var sender = client.CreateSender(ServiceBusQueueName);
+            var sender = client.CreateSender(serviceBusQueueName);
             var message = new ServiceBusMessage(messageContent);
 
             await sender.SendMessageAsync(message);
         }
     }
 
+
+    private void ValidateParameters(string? serviceBusConnString, string? serviceBusQueueName, IDictionary<int, int> basketQuantities)
+    {
+        if (string.IsNullOrEmpty(serviceBusConnString))
+        {
+            throw new ArgumentException("Service bus connection string cannot be empty.", nameof(serviceBusConnString));
+        }
+
+        if (string.IsNullOrEmpty(serviceBusQueueName))
+        {
+            throw new ArgumentException("Service bus queue name cannot be empty.", nameof(serviceBusQueueName));
+        }
+
+        if (basketQuantities == null)
+        {
+            throw new ArgumentNullException(nameof(basketQuantities), "Basket quantities cannot be null.");
+        }
+
+        if (basketQuantities.Count < 1)
+        {
+            throw new ArgumentException("Basket quantities cannot be empty.", nameof(basketQuantities));
+        }
+    }
 
     private ReservedOrderItems MapBasketQuantities(IDictionary<int, int> basketItems)
     {

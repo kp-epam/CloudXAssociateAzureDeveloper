@@ -23,6 +23,7 @@ public class CheckoutModel : PageModel
     private readonly IAppLogger<CheckoutModel> _logger;
     private readonly ISaveOrderDetailsInCosmosDBUseCase _saveOrderDetailsInCosmosDB;
     private readonly IPushOrderItemsToServiceBusUseCase _pushOrderItemsToServiceBus;
+    private readonly IConfiguration _configuration;
     private string? _username = null;
 
     public CheckoutModel(IBasketService basketService,
@@ -31,7 +32,8 @@ public class CheckoutModel : PageModel
         IOrderService orderService,
         IAppLogger<CheckoutModel> logger,
         ISaveOrderDetailsInCosmosDBUseCase saveOrderDetailsInCosmosDB,
-        IPushOrderItemsToServiceBusUseCase pushOrderItemsToServiceBus)
+        IPushOrderItemsToServiceBusUseCase pushOrderItemsToServiceBus,
+        IConfiguration configuration)
     {
         _basketService = basketService;
         _signInManager = signInManager;
@@ -40,6 +42,7 @@ public class CheckoutModel : PageModel
         _logger = logger;
         _saveOrderDetailsInCosmosDB = saveOrderDetailsInCosmosDB;
         _pushOrderItemsToServiceBus = pushOrderItemsToServiceBus;
+        _configuration = configuration;
     }
 
     public BasketViewModel BasketModel { get; set; } = new BasketViewModel();
@@ -66,8 +69,12 @@ public class CheckoutModel : PageModel
                 .CreateAndGetOrderAsync(BasketModel.Id, new Address("123 Main St.", "Kent", "OH", "United States", "44240"));
             await _basketService.DeleteBasketAsync(BasketModel.Id);
 
-            await _saveOrderDetailsInCosmosDB.Apply(createdOrder);
-            await _pushOrderItemsToServiceBus.Apply(quantities);
+            var deliveryOrderProcessorFuncUrl = _configuration.GetValue("DeliveryOrderProcessorFuncUrl", string.Empty);
+            await _saveOrderDetailsInCosmosDB.Apply(deliveryOrderProcessorFuncUrl, createdOrder);
+
+            var serviceBusConnString = _configuration.GetValue("ServiceBusConnectionString", string.Empty);
+            var serviceBusQueueName = _configuration.GetValue("ServiceBusQueueName", string.Empty);
+            await _pushOrderItemsToServiceBus.Apply(serviceBusConnString, serviceBusQueueName, quantities);
         }
         catch (EmptyBasketOnCheckoutException emptyBasketOnCheckoutException)
         {

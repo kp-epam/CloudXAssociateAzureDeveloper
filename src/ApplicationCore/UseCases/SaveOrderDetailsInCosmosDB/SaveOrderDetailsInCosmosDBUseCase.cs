@@ -13,8 +13,6 @@ using static System.Net.Mime.MediaTypeNames;
 namespace Microsoft.eShopWeb.ApplicationCore.UseCases.SaveOrderDetailsInCosmosDB;
 public class SaveOrderDetailsInCosmosDBUseCase : ISaveOrderDetailsInCosmosDBUseCase
 {
-    private const string AzureFunctionApiUrl = "";
-
     private readonly ILogger<SaveOrderDetailsInCosmosDBUseCase> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -26,17 +24,15 @@ public class SaveOrderDetailsInCosmosDBUseCase : ISaveOrderDetailsInCosmosDBUseC
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task Apply(Order order)
+
+    public async Task Apply(string? azureFunctionUrl, Order order)
     {
-        if (order == null)
-        {
-            return;
-        }
+        ValidateParameters(azureFunctionUrl, order);
 
         var orderInfo = MapOrderEntity(order);
         var orderInfoJson = JsonSerializer.Serialize(orderInfo);
         var requestContent = new StringContent(orderInfoJson, Encoding.UTF8, Application.Json);
-        var request = new HttpRequestMessage(HttpMethod.Post, AzureFunctionApiUrl)
+        var request = new HttpRequestMessage(HttpMethod.Post, azureFunctionUrl)
         {
             Content = requestContent
         };
@@ -49,6 +45,19 @@ public class SaveOrderDetailsInCosmosDBUseCase : ISaveOrderDetailsInCosmosDBUseC
         _logger.LogInformation("Order has been sent.");
     }
 
+
+    private void ValidateParameters(string? azureFunctionUrl, Order order)
+    {
+        if (string.IsNullOrEmpty(azureFunctionUrl))
+        {
+            throw new ArgumentException("Azure function url cannot be empty.", nameof(azureFunctionUrl));
+        }
+
+        if (order == null)
+        {
+            throw new ArgumentNullException(nameof(order), "Order cannot be null.");
+        }
+    }
 
     private OrderInfo MapOrderEntity(Order order)
     {
