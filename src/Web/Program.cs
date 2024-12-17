@@ -1,5 +1,6 @@
 ﻿using System.Net.Mime;
 using Ardalis.ListStartupServices;
+using Azure.Identity;
 using BlazorAdmin;
 using BlazorAdmin.Services;
 using Blazored.LocalStorage;
@@ -31,15 +32,27 @@ if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName =
 }
 else
 {
+    // Get secrects from Azure Key Vault
+    var clientId = builder.Configuration["ManagedIdentityClientId"];
+    var credential = new DefaultAzureCredential(
+        new DefaultAzureCredentialOptions
+        {
+            ManagedIdentityClientId = clientId
+        });
+
+    var keyVaultUri = builder.Configuration["KeyVaultUri"] ?? string.Empty;
+
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
+
     // Configure SQL Server (prod)
     builder.Services.AddDbContext<CatalogContext>(c =>
     {
-        var connectionString = builder.Configuration.GetConnectionString("CatalogConnection");
+        var connectionString = builder.Configuration["AZURE-SQL-CATALOG-CONNECTION-STRING"];
         c.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure());
     });
     builder.Services.AddDbContext<AppIdentityDbContext>(options =>
     {
-        var connectionString = builder.Configuration.GetConnectionString("IdentityConnection");
+        var connectionString = builder.Configuration["AZURE-SQL-IDENTITY-CONNECTION-STRING"];
         options.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure());
     });
 }
