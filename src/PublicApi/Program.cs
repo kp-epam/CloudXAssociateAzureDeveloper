@@ -75,7 +75,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: CORS_POLICY,
         corsPolicyBuilder =>
         {
-            corsPolicyBuilder.WithOrigins(baseUrlConfig!.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'));
+            corsPolicyBuilder.WithOrigins(
+                baseUrlConfig!.WebBase.Replace("host.docker.internal", "localhost").TrimEnd('/'),
+                "https://myawesomeshop.trafficmanager.net");
             corsPolicyBuilder.AllowAnyMethod();
             corsPolicyBuilder.AllowAnyHeader();
         });
